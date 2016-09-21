@@ -1,3 +1,4 @@
+const fs = require('fs')
 module.exports = (path, mode, cb) => {
 	if (mode === 'top') throw new Error('Unsupported mode')
 	try {
@@ -10,5 +11,5 @@ module.exports = (path, mode, cb) => {
   	}
   })
 
-  return cb(null, rows.slice(Math.max(rows.length - 30))
+  return cb(null, rows.slice(Math.max(rows.length - 30)))
 }

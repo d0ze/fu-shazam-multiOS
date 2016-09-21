@@ -18,7 +18,7 @@ program
   .option('-t, --top', 'Alias for -m top. Publishes the 30 most played songs')
   .option('-l, --last', 'Alias for -m last. Last pusblishes the last 30')
   .parse(process.argv);
-console.log(program)
+//console.log(program)
 if (program.top) program.mode = 'top'
 if (program.last) program.mode = 'last'
 
