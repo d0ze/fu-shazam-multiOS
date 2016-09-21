@@ -18,15 +18,14 @@ program
   .option('-t, --top', 'Alias for -m top. Publishes the 30 most played songs')
   .option('-l, --last', 'Alias for -m last. Last pusblishes the last 30')
   .parse(process.argv);
-//console.log(program)
+
 if (program.top) program.mode = 'top'
 if (program.last) program.mode = 'last'
 
-if (program.mode === undefined) throw new Error('You must specify a mode to run. Use --help to learn more.')
+if (program.mode === undefined || !/^(top|last)$/i.test(program.mode)) throw new Error('You must specify a valid mode to run. Use --help to learn more.')
 const config = JSON.parse(fs.readFileSync('./conf.json', 'utf8'))
 
-const corkyString = "<p>This playlist is automatically generated from my Shazam tagged songs.</p> <p> Feel free to message me for more info. </p>"
-
+const corkyString = "<p>This playlist is automatically generated from my 30 " + program.mode + " played songs (tracked via shazam, so not 100% accurate).</p> <p> Feel free to message me for more info. </p>"
 const operation = retry.operation({minTimeout: 5000})
 
 const publishPlaylist = (attempt) => {
@@ -44,7 +43,7 @@ const publishPlaylist = (attempt) => {
       async.map(rows, function(row, cb) {
         clientnew.get('/tracks', {q : row.artist + ' ' + row.name }, (err, result) => {
           if (operation.retry(err)) return
-          const selected = result[0];
+          const selected = result[0]
           if (!_.isUndefined(selected)) {
             return cb(null, {id: selected.id})
           } else {
