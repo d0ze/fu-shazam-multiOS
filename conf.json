@@ -1,0 +1,9 @@
+{
+	"DB": "Path to your Shazam database ",
+	"credentials": {
+		"client_id": "c9fbc19725f44e38863c0ff9c48f55da",
+		"client_secret": "b66d7089ec01ae7a581b42ebdd8812fa",
+		"username": "Your Soundcloud username",
+		"password": "Your Soundcloud password"
+	}
+}
