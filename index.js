@@ -66,7 +66,7 @@ const publishPlaylist = (attempt) => {
           })
         })
       } else {
-        const db = new sqlite3.Database(config.DBsqlLite, sqlite3.OPEN_READONLY, (err) => {
+        const db = new sqlite3.Database(config.DB, sqlite3.OPEN_READONLY, (err) => {
       if (operation.retry(err)) return
 
       db.all(uglyQuery, (err, rows) => {
