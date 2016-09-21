@@ -2,23 +2,30 @@ const async = require('async')
 const moment = require('moment')
 const _ = require('lodash')
 const SC = require('soundcloud-nodejs-api-wrapper')
-const sqlite3 = require ('sqlite3')
 const retry = require('retry')
 const fs = require('fs')
 
+const program = require('commander');
+
+var fetchSongs
+if (process.platform == 'win32') fetchSongs = require('./fetchSongs.win32.js')
+else if (process.platform == 'darwin') fetchSongs = require('./fetchSongs.osx.js')
+else throw new Error('Platform not supported.')
+
+program
+  .version('0.1.0')
+  .option('-m, --mode <mode>', 'Accepted modes: top, last.')
+  .option('-t, --top', 'Alias for -m top. Publishes the 30 most played songs')
+  .option('-l, --last', 'Alias for -m last. Last pusblishes the last 30')
+  .parse(process.argv);
+console.log(program)
+if (program.top) program.mode = 'top'
+if (program.last) program.mode = 'last'
+
+if (program.mode === undefined) throw new Error('You must specify a mode to run. Use --help to learn more.')
 const config = JSON.parse(fs.readFileSync('./conf.json', 'utf8'))
 
-
-
-
 const corkyString = "<p>This playlist is automatically generated from my Shazam tagged songs.</p> <p> Feel free to message me for more info. </p>"
-
-const uglyQuery = "SELECT DATETIME(`ZDATE`, 'unixepoch', 'localtime', '+31 years')  as `ZDATE`, `ZTRACKNAME`, `ZNAME`, `ZALBUMARTURLSTRING`, count(`ZTRACKNAME`) as `ZCOUNT`   \
-FROM `ZSHTAGRESULTMO` LEFT JOIN `ZSHARTISTMO` ON `ZSHTAGRESULTMO`.Z_PK = `ZSHARTISTMO`.ZTAGRESULT                                                                              \
-WHERE DATETIME(`ZDATE`, 'unixepoch', 'localtime', '+31 years') BETWEEN DATETIME('now', '-1 month') AND DATETIME('now')                                                        \
-GROUP BY `ZTRACKNAME`                                                                                                                                                          \
-ORDER BY `ZCOUNT` DESC                                                                                                                                                         \
-LIMIT 30"
 
 const operation = retry.operation({minTimeout: 5000})
 
@@ -32,71 +39,29 @@ const publishPlaylist = (attempt) => {
     const access_token = res.access_token;
     const clientnew = sc.client({access_token : access_token});
 
-    var isWin = process.platform
-    console.log("OS" + isWin)
-    if(isWin == 'win32'){
-    var obj = JSON.parse(fs.readFileSync(config.DB));
-
-    const rows =  obj.mytags.map(function(el) {
-
-      return {
-          name: el.v3.track.heading.title, artist: el.v3.track.heading.subtitle
-        }
-      })
-
-        rows.slice(Math.max(rows.length - 20))
-        async.map(rows, function(row, cb) {
-          clientnew.get('/tracks', {q : row.artist + ' ' + row.name }, (err, result) => {
-            if (operation.retry(err)) return
-            const selected = result[0];
-            if (!_.isUndefined(selected)) {
-              return cb(null, {id: selected.id})
-            } else {
-              console.error('Track not found ' + row.name + ' by ' + row.artist)
-              return cb(null, {id: null})
-            }
-          })
-        } , function(err, trackIds) {
-          if (operation.retry(err)) return
-          const fTrackIds = _.filter(trackIds, (t) => { return !_.isNull(t) } )
-          const title = moment().format('MMMM YYYY')
-          clientnew.post('/playlists', JSON.stringify({playlist: {title: title, tracks: fTrackIds, sharing: 'public', description: corkyString}}), (err, result) => {
-            if (operation.retry(err)) return
-            else console.log('done')
-          })
-        })
-      } else {
-        const db = new sqlite3.Database(config.DB, sqlite3.OPEN_READONLY, (err) => {
+    fetchSongs(config.DB, program.mode, (err, rows) => {
       if (operation.retry(err)) return
-
-      db.all(uglyQuery, (err, rows) => {
-        if (operation.retry(err)) return
-
-        async.map(rows, function(row, cb) {
-          clientnew.get('/tracks', {q : row.ZNAME + ' ' + row.ZTRACKNAME }, (err, result) => {
-            if (operation.retry(err)) return
-            const selected = result[0];
-            if (!_.isUndefined(selected)) {
-              return cb(null, {id: selected.id})
-            } else {
-              console.error('Track not found ' + row.ZTRACKNAME + ' by ' + row.ZNAME)
-              return cb(null, {id: null})
-            }
-          })
-        } , function(err, trackIds) {
+      async.map(rows, function(row, cb) {
+        clientnew.get('/tracks', {q : row.artist + ' ' + row.name }, (err, result) => {
           if (operation.retry(err)) return
-          const fTrackIds = _.filter(trackIds, (t) => { return !_.isNull(t) } )
-          const title = moment().format('MMMM YYYY')
-          clientnew.post('/playlists', JSON.stringify({playlist: {title: title, tracks: fTrackIds, sharing: 'public', description: corkyString}}), (err, result) => {
-            if (operation.retry(err)) return
-            else console.log('done')
-          })
+          const selected = result[0];
+          if (!_.isUndefined(selected)) {
+            return cb(null, {id: selected.id})
+          } else {
+            console.error('Track not found ' + row.name + ' by ' + row.artist)
+            return cb(null, {id: null})
+          }
+        })
+      } , function(err, trackIds) {
+        if (operation.retry(err)) return
+        const fTrackIds = _.filter(trackIds, (t) => { return !_.isNull(t) } )
+        const title = moment().format('MMMM YYYY')
+        clientnew.post('/playlists', JSON.stringify({playlist: {title: title, tracks: fTrackIds, sharing: 'public', description: corkyString}}), (err, result) => {
+          if (operation.retry(err)) return
+          else console.log('done')
         })
       })
-})
-      }
-
-
+    })
   })
 }
 
