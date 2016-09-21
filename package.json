@@ -12,6 +12,7 @@
   "dependencies": {
     "async": "^2.0.1",
     "bluebird": "^3.4.1",
+    "commander": "^2.9.0",
     "lodash": "^4.15.0",
     "moment": "^2.15.0",
     "retry": "^0.10.0",
