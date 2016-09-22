@@ -2,14 +2,14 @@ const fs = require('fs')
 function sortByFrequency(array) {
     var frequency = {};
 
-    array.forEach(function(value) { frequency[value] = 0; });
+    array.forEach(function(value) { frequency[value.name] = 0; });
 
-    var uniques = array.filter(function(value) {
-        return ++frequency[value] == 1;
+    uniques = array.filter(function(value) {
+        return ++frequency[value.name] == 1;
     });
 
     return uniques.sort(function(a, b) {
-        return frequency[b] - frequency[a];
+        return frequency[b.name] - frequency[a.name] ;
     });
 }
 module.exports = (path, mode, cb) => {
@@ -24,12 +24,13 @@ module.exports = (path, mode, cb) => {
   	}
 
   })
-		console.log(rows)
+
 	if (mode === 'top') {
-		sortByFrequency(rows);
-		return cb(null, rows.slice(1, 31))
+		var rows_ordered = sortByFrequency(rows);
+
+		return cb(null, rows_ordered.slice(0, 31))
 
 	}else if (mode == 'last'){
-  	return cb(null, rows.slice(rows.length-30, rows.length))
+  	return cb(null, rows.slice(rows.length-30, rows.length+1))
 }
 }
