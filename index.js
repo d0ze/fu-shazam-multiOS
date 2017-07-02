@@ -34,12 +34,15 @@ const publishPlaylist = (attempt) => {
   const client = sc.client()
 
   client.exchange_token(function(err, tok, bho, res) {
+
     if (operation.retry(err)) return
     const access_token = res.access_token;
     const clientnew = sc.client({access_token : access_token});
 
     fetchSongs(config.DB, program.mode, (err, rows) => {
+    
       if (operation.retry(err)) return
+
       async.map(rows, function(row, cb) {
         clientnew.get('/tracks', {q : row.artist + ' ' + row.name }, (err, result) => {
           if (operation.retry(err)) return

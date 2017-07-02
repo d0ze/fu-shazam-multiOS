@@ -14,12 +14,11 @@ function sortByFrequency(array) {
 }
 module.exports = (path, mode, cb) => {
 
-	try {
- 		const obj = JSON.parse(fs.readFileSync(path));
-	}
-	catch (e) { return cb(e) }
+  const obj = JSON.parse(fs.readFileSync(path, 'utf8'));
 	const rows = obj.mytags.map(function(el) {
+
 	  return {
+
 	      name: el.v3.track.heading.title, artist: el.v3.track.heading.subtitle
   	}
 
